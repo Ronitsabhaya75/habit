@@ -22,6 +22,18 @@ const pieces = {
   blackKing: "♚",
 }
 
+// Space theme colors
+const spaceTheme = {
+  deepSpace: '#0B1A2C',
+  deepSpaceAlt: '#142943',
+  deepSpaceLight: '#1D3A54',
+  accentGlow: '#00FFC6',
+  accentGold: '#FFD580',
+  accentOrange: '#FF7F50',
+  textPrimary: '#D0E7FF',
+  highlight: '#FFFA81',
+}
+
 // Define board initialization function
 function initializeBoard() {
   const initialBoard = Array(8)
@@ -496,34 +508,74 @@ export function ChessGame() {
   }
 
   return (
-    <div className="flex flex-col items-center space-y-6">
+    <div className="flex flex-col items-center space-y-6 min-h-screen bg-gradient-to-br from-[#0B1A2C] to-[#142943] text-[#D0E7FF] p-4 relative overflow-hidden">
+      {/* Background stars */}
+      <div className="absolute inset-0 overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full bg-white animate-pulse"
+            style={{
+              width: `${Math.random() * 3 + 1}px`,
+              height: `${Math.random() * 3 + 1}px`,
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              opacity: Math.random() * 0.6 + 0.2,
+              animationDuration: `${Math.random() * 3 + 2}s`,
+            }}
+          />
+        ))}
+      </div>
+
       {!gameStarted ? (
-        <div className="text-center space-y-4">
-          <h3 className="text-xl font-bold text-white">Cosmic Chess</h3>
-          <p className="text-gray-400">Challenge your strategic thinking with a game of chess.</p>
-          <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={() => setGameStarted(true)}>
+        <div className="text-center space-y-4 z-10">
+          <h3 className="text-3xl font-bold text-[#00FFC6] font-orbitron tracking-wider">
+            Cosmic Chess
+          </h3>
+          <p className="text-gray-400 max-w-md">
+            Challenge your strategic thinking with a game of chess against our AI opponent.
+            Control the white pieces and aim for victory!
+          </p>
+          <Button 
+            className="bg-gradient-to-r from-[#00FFC6] to-[#4A90E2] hover:from-[#00FFC6]/90 hover:to-[#4A90E2]/90 text-black font-bold py-3 px-6 rounded-lg transition-all hover:scale-105 shadow-lg"
+            onClick={() => setGameStarted(true)}
+          >
             Start Game
           </Button>
         </div>
       ) : (
         <>
-          <div className="flex justify-between w-full max-w-md mb-2">
-            <Badge className="bg-[#4cc9f0] text-black">Score: {playerScore}</Badge>
-            {winStreak > 0 && <Badge className="bg-amber-500 text-black">🔥 Streak: {winStreak}</Badge>}
-            {isComputerTurn && <Badge className="bg-[#2a3343] animate-pulse">Computer thinking...</Badge>}
+          <div className="flex justify-between w-full max-w-md mb-2 z-10">
+            <div className="flex items-center gap-2">
+              <div className="bg-[#0B1A2C] border border-[#00FFC6]/30 rounded-lg px-4 py-2">
+                <span className="text-[#00FFC6]">Score:</span>{" "}
+                <span className="text-[#FFD580] font-bold">{playerScore}</span>
+              </div>
+              {winStreak > 0 && (
+                <div className="bg-[#0B1A2C] border border-amber-500/30 rounded-lg px-3 py-2 flex items-center gap-1">
+                  <span className="text-amber-500">🔥</span>
+                  <span className="text-amber-500">Streak: {winStreak}</span>
+                </div>
+              )}
+            </div>
+            {isComputerTurn && (
+              <div className="bg-[#0B1A2C] border border-[#FF7F50]/30 rounded-lg px-4 py-2 animate-pulse">
+                Computer thinking...
+              </div>
+            )}
           </div>
 
-          <div className="flex justify-between w-full max-w-md mb-2">
-            <div className="flex gap-1">
+          <div className="flex justify-between w-full max-w-md mb-2 z-10">
+            <div className="flex gap-1 bg-[#0B1A2C]/80 border border-[#00FFC6]/20 rounded-lg px-3 py-2">
               {capturedPieces.black.map((piece, i) => (
-                <span key={i} className="text-amber-400 text-lg">
+                <span key={i} className="text-[#FFD580] text-xl">
                   {getPieceSymbol(piece)}
                 </span>
               ))}
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 bg-[#0B1A2C]/80 border border-[#00FFC6]/20 rounded-lg px-3 py-2">
               {capturedPieces.white.map((piece, i) => (
-                <span key={i} className="text-white text-lg">
+                <span key={i} className="text-white text-xl">
                   {getPieceSymbol(piece)}
                 </span>
               ))}
@@ -531,8 +583,12 @@ export function ChessGame() {
           </div>
 
           <div
-            className="grid grid-cols-8 gap-0 w-full max-w-md border border-[#4cc9f0]/30 rounded-md overflow-hidden"
+            className="grid grid-cols-8 gap-0 w-full max-w-md border border-[#00FFC6]/30 rounded-md overflow-hidden shadow-lg relative z-10"
             ref={boardRef}
+            style={{
+              background: "rgba(14, 26, 64, 0.8)",
+              backdropFilter: "blur(8px)",
+            }}
           >
             {board.map((row, rowIndex) =>
               row.map((piece, colIndex) => {
@@ -543,65 +599,107 @@ export function ChessGame() {
                   lastMove &&
                   ((7 - rowIndex === lastMove[0] && colIndex === lastMove[1]) ||
                     (7 - rowIndex === lastMove[2] && colIndex === lastMove[3]))
+                const isAnimated = animatedSquare && 7 - rowIndex === animatedSquare[0] && colIndex === animatedSquare[1]
 
                 return (
                   <div
                     key={`${rowIndex}-${colIndex}`}
                     className={`
-                      aspect-square flex items-center justify-center text-2xl cursor-pointer relative
-                      ${isEven ? "bg-[#3a4353]" : "bg-[#2a3343]"}
-                      ${isSelected ? "ring-2 ring-[#4cc9f0] ring-opacity-70" : ""}
-                      ${isLastMoveSquare ? "bg-[#4cc9f0]/10" : ""}
-                      ${isValidMove ? "after:absolute after:w-3 after:h-3 after:rounded-full after:bg-[#4cc9f0]/30" : ""}
-                      hover:bg-[#4cc9f0]/20 transition-colors
+                      aspect-square flex items-center justify-center text-3xl cursor-pointer relative
+                      ${isEven ? "bg-[#1D3A54]/60" : "bg-[#0B1A2C]/90"}
+                      ${isSelected ? "ring-2 ring-[#00FFC6] ring-opacity-70 shadow-inner shadow-[#00FFC6]/30" : ""}
+                      ${isLastMoveSquare ? "bg-[#00FFC6]/10" : ""}
+                      ${isValidMove ? "after:absolute after:w-4 after:h-4 after:rounded-full after:bg-[#00FFC6]/30 after:border after:border-[#00FFC6]/60" : ""}
+                      transition-all duration-200
+                      ${!isComputerTurn && gameStatus === null ? "hover:bg-[#00FFC6]/20" : ""}
+                      ${isAnimated ? "scale-105" : ""}
                     `}
                     onClick={() => handleSquareClick(7 - rowIndex, colIndex)}
                   >
-                    <span className={piece?.color === "white" ? "text-white" : "text-amber-400"}>
+                    <span 
+                      className={`
+                        ${piece?.color === "white" ? "text-white drop-shadow-[0_0_6px_rgba(184,255,249,0.7)]" : "text-[#FFD580] drop-shadow-[0_0_6px_rgba(255,213,128,0.7)]"}
+                        ${isAnimated ? "animate-pulse" : ""}
+                      `}
+                    >
                       {getPieceSymbol(piece)}
                     </span>
 
                     {/* Coordinates */}
                     {colIndex === 0 && (
-                      <span className="absolute bottom-0.5 left-1 text-xs text-gray-400">{8 - rowIndex}</span>
+                      <span className="absolute bottom-1 left-1 text-xs text-[#D0E7FF]/60 font-bold">
+                        {8 - rowIndex}
+                      </span>
                     )}
                     {rowIndex === 7 && (
-                      <span className="absolute top-0.5 right-1 text-xs text-gray-400">
+                      <span className="absolute top-1 right-1 text-xs text-[#D0E7FF]/60 font-bold">
                         {String.fromCharCode(97 + colIndex)}
                       </span>
                     )}
                   </div>
                 )
-              }),
+              })
             )}
           </div>
 
+          <div className="flex justify-between w-full max-w-md z-10">
+            <div className="bg-[#0B1A2C]/80 border border-[#00FFC6]/30 rounded-lg px-4 py-2">
+              {isWhiteTurn ? "White's Turn" : "Black's Turn"}
+            </div>
+            <div className="bg-[#0B1A2C]/80 border border-[#00FFC6]/30 rounded-lg px-4 py-2 flex items-center gap-1">
+              <span className="text-[#FFD580]">✦</span>
+              <span>Rank:</span>
+              <span className="text-[#00FFC6] font-bold">{getCurrentRank()}</span>
+            </div>
+          </div>
+
           {gameStatus && (
-            <div className="bg-[#1a2332]/90 border border-[#4cc9f0]/30 rounded-lg p-4 text-center">
-              <h3 className="text-xl font-bold mb-2 text-[#4cc9f0]">
-                {gameStatus === "victory" ? "Victory!" : "Defeat!"}
-              </h3>
-              {gameStatus === "victory" && (
-                <>
-                  <p className="text-white mb-2">Rank: {getCurrentRank()}</p>
-                  <p className="text-amber-400 mb-4">+{10 + (winStreak >= 3 ? 5 : 0)} XP earned</p>
-                </>
-              )}
-              <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={resetBoard}>
-                Play Again
-              </Button>
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+              <div className="bg-[#0B1A2C] border border-[#00FFC6]/30 rounded-xl p-6 text-center max-w-md w-full mx-4">
+                <h3 className="text-3xl font-bold mb-4 text-[#00FFC6]">
+                  {gameStatus === "victory" ? "Victory!" : "Defeat!"}
+                </h3>
+                {gameStatus === "victory" && (
+                  <>
+                    <p className="text-[#D0E7FF] mb-2">Rank: {getCurrentRank()}</p>
+                    <p className="text-[#FFD580] text-xl mb-6">
+                      +{10 + (winStreak >= 3 ? 5 : 0)} XP earned
+                    </p>
+                  </>
+                )}
+                <Button 
+                  className="bg-gradient-to-r from-[#00FFC6] to-[#4A90E2] hover:from-[#00FFC6]/90 hover:to-[#4A90E2]/90 text-black font-bold py-3 px-6 rounded-lg transition-all hover:scale-105 shadow-lg w-full"
+                  onClick={resetBoard}
+                >
+                  Play Again
+                </Button>
+              </div>
             </div>
           )}
 
           {!gameStatus && (
-            <div className="flex space-x-4">
+            <div className="flex space-x-4 z-10">
               <Button
-                variant="outline"
-                className="bg-[#2a3343] hover:bg-[#3a4353] text-white border-[#3a4353]"
+                className="bg-[#0B1A2C] hover:bg-[#142943] text-[#D0E7FF] border border-[#00FFC6]/30 rounded-lg px-6 py-2 transition-all"
                 onClick={resetBoard}
               >
                 Restart
               </Button>
+            </div>
+          )}
+
+          {/* Moves history */}
+          {movesHistory.length > 0 && (
+            <div className="absolute top-20 right-4 bg-[#0B1A2C]/80 border border-[#00FFC6]/30 rounded-lg p-3 text-sm max-h-40 overflow-y-auto w-32 z-10">
+              <div className="font-bold text-[#00FFC6] mb-2 text-center">Moves</div>
+              {movesHistory.slice(-8).map((move, index) => (
+                <div key={index} className="flex justify-between py-1 border-b border-[#00FFC6]/10 last:border-0">
+                  <span>{Math.floor(index/2) + 1}.</span>
+                  <span className={move.color === "white" ? "text-white" : "text-[#FFD580]"}>
+                    {move.move}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </>
