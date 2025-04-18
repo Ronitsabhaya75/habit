@@ -1,12 +1,21 @@
+// chess-game.tsx
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { toast } from "@/components/ui/use-toast"
 import { updateUserXP } from "@/lib/xp-utils"
 
-// Chess pieces (Unicode characters)
-const pieces = {
+// Piece type
+interface Piece {
+  type: string
+  color: "white" | "black"
+  hasMoved: boolean
+}
+
+// Chess pieces (Unicode)
+const pieces: Record<string, string> = {
   whitePawn: "♙",
   whiteRook: "♖",
   whiteKnight: "♘",
@@ -21,237 +30,198 @@ const pieces = {
   blackKing: "♚",
 }
 
-// Initialize board correctly
-function initializeBoard() {
-  const board = Array(8).fill(null).map(() => Array(8).fill(null))
+// Space theme classes
+const spaceTheme = {
+  deep: "bg-[#0B1A2C]",
+  light: "bg-[#1D3A54]",
+  accent: "#00FFC6",
+  gold: "#FFD580",
+}
 
-  for (let col = 0; col < 8; col++) {
-    board[1][col] = { type: "pawn", color: "black", hasMoved: false }
-    board[6][col] = { type: "pawn", color: "white", hasMoved: false }
+// Initialize board: black at top, white at bottom
+function initializeBoard(): (Piece | null)[][] {
+  const backRank = ["rook","knight","bishop","queen","king","bishop","knight","rook"]
+  const board: (Piece | null)[][] = Array(8)
+    .fill(null)
+    .map(() => Array(8).fill(null))
+  for (let i = 0; i < 8; i++) {
+    board[0][i] = { type: backRank[i], color: "black", hasMoved: false }
+    board[1][i] = { type: "pawn", color: "black", hasMoved: false }
+    board[6][i] = { type: "pawn", color: "white", hasMoved: false }
+    board[7][i] = { type: backRank[i], color: "white", hasMoved: false }
   }
-
-  const backRank = ["rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"]
-  for (let col = 0; col < 8; col++) {
-    board[0][col] = { type: backRank[col], color: "black", hasMoved: false }
-    board[7][col] = { type: backRank[col], color: "white", hasMoved: false }
-  }
-
   return board
 }
 
-// Algebraic notation
-const toAlgebraic = (row, col) => {
-  const files = ["a", "b", "c", "d", "e", "f", "g", "h"]
-  return `${files[col]}${8 - row}`
-}
-
-export function ChessGame() {
-  const [board, setBoard] = useState(initializeBoard)
-  const [selectedPiece, setSelectedPiece] = useState(null)
-  const [validMoves, setValidMoves] = useState([])
+export const ChessGame: React.FC = () => {
+  const [board, setBoard] = useState<(Piece | null)[][]>(initializeBoard)
+  const [selected, setSelected] = useState<[number, number] | null>(null)
+  const [validMoves, setValidMoves] = useState<[number, number][]>([])
   const [isWhiteTurn, setIsWhiteTurn] = useState(true)
-  const [isComputerTurn, setIsComputerTurn] = useState(false)
+  const [promotionColor, setPromotionColor] = useState<"white" | "black" | null>(null)
+  const [promoPos, setPromoPos] = useState<[number, number] | null>(null)
   const [gameStarted, setGameStarted] = useState(false)
-  const [playerScore, setPlayerScore] = useState(0)
-  const [capturedPieces, setCapturedPieces] = useState({ white: [], black: [] })
-  const [gameStatus, setGameStatus] = useState(null)
-  const animationTimeoutRef = useRef(null)
 
-  useEffect(() => {
-    return () => {
-      if (animationTimeoutRef.current) clearTimeout(animationTimeoutRef.current)
-    }
-  }, [])
+  // Get symbol
+  const getSymbol = (p: Piece | null) =>
+    p ? pieces[p.color + p.type.charAt(0).toUpperCase() + p.type.slice(1)] : ""
 
-  const getPieceSymbol = (piece) => {
-    if (!piece) return ""
-    return pieces[`${piece.color}${piece.type.charAt(0).toUpperCase()}${piece.type.slice(1)}`]
-  }
-
-  const calculateValidMoves = (row, col) => {
-    const piece = board[row][col]
-    if (!piece) return []
-    const moves = []
-    const color = piece.color
-    const isWhite = color === "white"
-
-    const addMove = (r, c) => {
-      if (r < 0 || r > 7 || c < 0 || c > 7) return false
-      const target = board[r][c]
-      if (!target) {
-        moves.push([r, c])
-        return true
-      } else if (target.color !== color) {
-        moves.push([r, c])
+  // Calculate moves
+  const calcMoves = (r: number, c: number): [number, number][] => {
+    const p = board[r][c]
+    if (!p) return []
+    const moves: [number, number][] = []
+    const dir = p.color === "white" ? -1 : 1
+    const add = (dr: number, dc: number) => {
+      const nr = r + dr,
+        nc = c + dc
+      if (nr < 0 || nr > 7 || nc < 0 || nc > 7) return false
+      const t = board[nr][nc]
+      if (!t) moves.push([nr, nc])
+      else if (t.color !== p.color) {
+        moves.push([nr, nc])
         return false
       }
-      return false
+      return !t
     }
-
-    if (piece.type === "pawn") {
-      const dir = isWhite ? -1 : 1
-      if (board[row + dir]?.[col] == null) {
-        moves.push([row + dir, col])
-        if (!piece.hasMoved && board[row + 2 * dir]?.[col] == null) {
-          moves.push([row + 2 * dir, col])
-        }
-      }
-      if (col > 0 && board[row + dir]?.[col - 1]?.color !== color) moves.push([row + dir, col - 1])
-      if (col < 7 && board[row + dir]?.[col + 1]?.color !== color) moves.push([row + dir, col + 1])
-    }
-
-    if (["rook", "queen"].includes(piece.type)) {
-      for (let r = row - 1; r >= 0; r--) if (!addMove(r, col)) break
-      for (let r = row + 1; r <= 7; r++) if (!addMove(r, col)) break
-      for (let c = col - 1; c >= 0; c--) if (!addMove(row, c)) break
-      for (let c = col + 1; c <= 7; c++) if (!addMove(row, c)) break
-    }
-
-    if (["bishop", "queen"].includes(piece.type)) {
-      for (let dr = -1; dr <= 1; dr += 2) {
-        for (let dc = -1; dc <= 1; dc += 2) {
-          let r = row + dr, c = col + dc
-          while (r >= 0 && r <= 7 && c >= 0 && c <= 7) {
-            if (!addMove(r, c)) break
-            r += dr
-            c += dc
-          }
-        }
-      }
-    }
-
-    if (piece.type === "knight") {
-      const knightMoves = [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]]
-      knightMoves.forEach(([dr, dc]) => {
-        const r = row + dr, c = col + dc
-        if (r >= 0 && r <= 7 && c >= 0 && c <= 7 && (!board[r][c] || board[r][c].color !== color))
-          moves.push([r, c])
+    if (p.type === "pawn") {
+      if (!board[r + dir]?.[c]) moves.push([r + dir, c])
+      if (!p.hasMoved && !board[r + 2 * dir]?.[c]) moves.push([r + 2 * dir, c])
+      ;[[dir, -1], [dir, 1]].forEach(([dr, dc]) => {
+        const t = board[r + dr]?.[c + dc]
+        if (t && t.color !== p.color) moves.push([r + dr, c + dc])
       })
     }
-
-    if (piece.type === "king") {
-      for (let dr = -1; dr <= 1; dr++) {
-        for (let dc = -1; dc <= 1; dc++) {
-          if (dr !== 0 || dc !== 0) {
-            const r = row + dr, c = col + dc
-            if (r >= 0 && r <= 7 && c >= 0 && c <= 7 && (!board[r][c] || board[r][c].color !== color))
-              moves.push([r, c])
-          }
+    if (["rook", "queen"].includes(p.type)) {
+      for (let i = 1; i < 8; i++) if (!add(i, 0)) break
+      for (let i = 1; i < 8; i++) if (!add(-i, 0)) break
+      for (let i = 1; i < 8; i++) if (!add(0, i)) break
+      for (let i = 1; i < 8; i++) if (!add(0, -i)) break
+    }
+    if (["bishop", "queen"].includes(p.type)) {
+      for (let i = 1; i < 8; i++) if (!add(i, i)) break
+      for (let i = 1; i < 8; i++) if (!add(i, -i)) break
+      for (let i = 1; i < 8; i++) if (!add(-i, i)) break
+      for (let i = 1; i < 8; i++) if (!add(-i, -i)) break
+    }
+    if (p.type === "knight") {
+      ;[
+        [-2, -1],
+        [-2, 1],
+        [-1, -2],
+        [-1, 2],
+        [1, -2],
+        [1, 2],
+        [2, -1],
+        [2, 1],
+      ].forEach(([dr, dc]) => {
+        const nr = r + dr,
+          nc = c + dc
+        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+          const t = board[nr][nc]
+          if (!t || t.color !== p.color) moves.push([nr, nc])
         }
-      }
+      })
+    }
+    if (p.type === "king") {
+      for (let dr = -1; dr <= 1; dr++)
+        for (let dc = -1; dc <= 1; dc++) if (dr || dc) add(dr, dc)
     }
     return moves
   }
 
-  const makeMove = (fromRow, fromCol, toRow, toCol) => {
-    const piece = board[fromRow][fromCol]
-    const newBoard = board.map(r => [...r])
-
-    if (board[toRow][toCol]) {
-      capturedPieces[piece.color === "white" ? "black" : "white"].push(board[toRow][toCol])
-      setPlayerScore(score => score + 1)
-    }
-
-    newBoard[toRow][toCol] = { ...piece, hasMoved: true }
-    newBoard[fromRow][fromCol] = null
-    setBoard(newBoard)
-    setSelectedPiece(null)
+  // Move and handle promotion
+  const makeMove = (fr: number, fc: number, tr: number, tc: number) => {
+    const p = board[fr][fc]
+    if (!p) return
+    const nb = board.map((r) => [...r])
+    nb[tr][tc] = { ...p, hasMoved: true }
+    nb[fr][fc] = null
+    setBoard(nb)
+    setSelected(null)
     setValidMoves([])
+    setIsWhiteTurn((w) => !w)
+    if (p.type === "pawn" && (tr === 0 || tr === 7)) {
+      setPromoPos([tr, tc])
+      setPromotionColor(p.color)
+    }
   }
 
-  const handleSquareClick = (row, col) => {
-    if (!gameStarted || isComputerTurn || gameStatus) return
+  // Handle promotion choice
+  const promotePawn = (type: string) => {
+    if (!promoPos || !promotionColor) return
+    const [r, c] = promoPos
+    const nb = board.map((r) => [...r])
+    nb[r][c] = { type, color: promotionColor, hasMoved: true }
+    setBoard(nb)
+    setPromotionColor(null)
+    setPromoPos(null)
+  }
 
-    if (!selectedPiece) {
-      const piece = board[row][col]
-      if (piece && piece.color === "white") {
-        setSelectedPiece([row, col])
-        setValidMoves(calculateValidMoves(row, col))
-      }
+  const handleClick = (r: number, c: number) => {
+    if (!gameStarted || promotionColor) return
+    if (selected) {
+      if (validMoves.some(([rr, cc]) => rr === r && cc === c)) {
+        makeMove(selected[0], selected[1], r, c)
+      } else setSelected(null)
     } else {
-      const [selRow, selCol] = selectedPiece
-      if (validMoves.some(([r, c]) => r === row && c === col)) {
-        makeMove(selRow, selCol, row, col)
-        setIsWhiteTurn(false)
-        setIsComputerTurn(true)
-      } else {
-        setSelectedPiece(null)
-        setValidMoves([])
+      const p = board[r][c]
+      if (p && p.color === (isWhiteTurn ? "white" : "black")) {
+        setSelected([r, c])
+        setValidMoves(calcMoves(r, c))
       }
     }
-  }
-
-  useEffect(() => {
-    if (isComputerTurn && !gameStatus && gameStarted) {
-      setTimeout(() => {
-        const moves = []
-        for (let r = 0; r < 8; r++) {
-          for (let c = 0; c < 8; c++) {
-            const piece = board[r][c]
-            if (piece && piece.color === "black") {
-              const valid = calculateValidMoves(r, c)
-              valid.forEach(([tr, tc]) => moves.push([r, c, tr, tc]))
-            }
-          }
-        }
-        if (moves.length) {
-          const [fr, fc, tr, tc] = moves[Math.floor(Math.random() * moves.length)]
-          makeMove(fr, fc, tr, tc)
-          setIsWhiteTurn(true)
-          setIsComputerTurn(false)
-        } else {
-          setGameStatus("Victory")
-        }
-      }, 800)
-    }
-  }, [isComputerTurn, board])
-
-  const startNewGame = () => {
-    setBoard(initializeBoard())
-    setSelectedPiece(null)
-    setValidMoves([])
-    setIsWhiteTurn(true)
-    setIsComputerTurn(false)
-    setGameStatus(null)
-    setPlayerScore(0)
-    setCapturedPieces({ white: [], black: [] })
-    setGameStarted(true)
   }
 
   return (
-    <div className="flex flex-col items-center p-4">
+    <div className="flex flex-col items-center min-h-screen bg-gradient-to-br from-[#0B1A2C] to-[#142943] text-[#D0E7FF] p-4">
       {!gameStarted ? (
-        <Button onClick={startNewGame}>Start Game</Button>
+        <Button className="bg-gradient-to-r from-[#00FFC6] to-[#4A90E2] text-black" onClick={() => setGameStarted(true)}>
+          Start Game
+        </Button>
       ) : (
-        <div className="grid grid-cols-8 gap-0 w-96">
-          {board.map((row, rowIndex) =>
-            row.map((piece, colIndex) => {
-              const isDark = (rowIndex + colIndex) % 2 === 1
-              const isSelected = selectedPiece && selectedPiece[0] === rowIndex && selectedPiece[1] === colIndex
-              const isValid = validMoves.some(([r, c]) => r === rowIndex && c === colIndex)
-
-              return (
-                <div
-                  key={`${rowIndex}-${colIndex}`}
-                  onClick={() => handleSquareClick(rowIndex, colIndex)}
-                  className={`h-12 w-12 flex items-center justify-center cursor-pointer
-                  ${isDark ? "bg-[#0B1A2C]" : "bg-[#1D3A54]"}
-                  ${isSelected ? "ring-2 ring-[#00FFC6]" : ""}
-                  ${isValid ? "bg-[#00FFC6]/30" : ""}
-                  `}
-                >
-                  <span className="text-xl">{getPieceSymbol(piece)}</span>
-                  {rowIndex === 7 && (
-                    <span className="absolute bottom-0 right-0 text-xs text-white">{String.fromCharCode(97 + colIndex)}</span>
-                  )}
-                  {colIndex === 0 && (
-                    <span className="absolute top-0 left-0 text-xs text-white">{8 - rowIndex}</span>
-                  )}
-                </div>
-              )
-            })
+        <div className="grid grid-cols-8 border border-[#00FFC6]/30">
+          {board.map((row, r) =>
+            row.map((p, c) => (
+              <div
+                key={`${r}-${c}`}
+                onClick={() => handleClick(r, c)}
+                className={`w-12 h-12 flex items-center justify-center cursor-pointer text-2xl ${
+                  (r + c) % 2 ? spaceTheme.light : spaceTheme.deep
+                } ${
+                  selected?.[0] === r && selected[1] === c
+                    ? `ring-2 ring-[${spaceTheme.accent}]`
+                    : ""
+                } ${
+                  validMoves.some(([rr, cc]) => rr === r && cc === c)
+                    ? `bg-[${spaceTheme.accent}]/30`
+                    : ""
+                }`}
+              >
+                {getSymbol(p)}
+              </div>
+            ))
           )}
         </div>
+      )}
+
+      {promotionColor && (
+        <Dialog open>
+          <DialogContent className="bg-[#1D3A54] text-white text-center">
+            <h3 className="text-lg mb-2">Promote Pawn</h3>
+            <div className="flex space-x-4 justify-center">
+              {["queen", "rook", "bishop", "knight"].map((type) => (
+                <Button
+                  key={type}
+                  className="bg-[#FFD580] text-black"
+                  onClick={() => promotePawn(type)}
+                >
+                  {pieces[promotionColor + type.charAt(0).toUpperCase() + type.slice(1)]}
+                </Button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )
