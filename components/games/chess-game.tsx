@@ -352,17 +352,17 @@ export function ChessGame() {
     return newBoard
   }
 
-  function handleSquareClick(row, col) {
-    if (isComputerTurn || gameStatus !== null || !gameStarted) {
-      return
-    }
+function handleSquareClick(row, col) {
+  if (isComputerTurn || gameStatus !== null || !gameStarted) {
+    return;
+  }
 
-    if (!selectedPiece) {
-      const piece = board[row][col]
-      if (piece && piece.color === "white") {
-        setSelectedPiece([row, col])
-        setValidMoves(calculateValidMoves(row, col))
-      } else {
+  if (!selectedPiece) {
+    const piece = board[row][col]; // This is correct because we're using displayRow for rendering
+    if (piece && piece.color === "white") {
+      setSelectedPiece([row, col]);
+      setValidMoves(calculateValidMoves(row, col));
+    }else {
         setValidMoves([])
       }
     } else {
@@ -616,64 +616,66 @@ export function ChessGame() {
           </div>
 
           {/* Chess board */}
-          <div
-            className="grid grid-cols-8 gap-0 w-full max-w-md border border-[#4cc9f0]/30 rounded-lg overflow-hidden bg-[#0e1a40]/80 backdrop-blur-sm shadow-lg shadow-[#4cc9f0]/10 relative"
-            ref={boardRef}
-          >
-            {board.map((row, rowIndex) =>
-              row.map((piece, colIndex) => {
-                const displayRow = 7 - rowIndex // Reverse for display
-                const isEven = (displayRow + colIndex) % 2 === 0
-                const isSelected = selectedPiece && selectedPiece[0] === displayRow && selectedPiece[1] === colIndex
-                const isValidMove = validMoves.some(([r, c]) => r === displayRow && c === colIndex)
-                const isLastMoveSquare = lastMove && 
-                  ((displayRow === lastMove[0] && colIndex === lastMove[1]) || 
-                   (displayRow === lastMove[2] && colIndex === lastMove[3]))
-                const isAnimated = animatedSquare && displayRow === animatedSquare[0] && colIndex === animatedSquare[1]
+{/* Chess board */}
+<div
+  className="grid grid-cols-8 gap-0 w-full max-w-md border border-[#4cc9f0]/30 rounded-lg overflow-hidden bg-[#0e1a40]/80 backdrop-blur-sm shadow-lg shadow-[#4cc9f0]/10 relative"
+  ref={boardRef}
+>
+  {board.map((row, rowIndex) =>
+    row.map((piece, colIndex) => {
+      // Reverse the row index to display the board correctly (a1 at bottom-left)
+      const displayRow = 7 - rowIndex;
+      const isEven = (displayRow + colIndex) % 2 === 0;
+      const isSelected = selectedPiece && selectedPiece[0] === displayRow && selectedPiece[1] === colIndex;
+      const isValidMove = validMoves.some(([r, c]) => r === displayRow && c === colIndex);
+      const isLastMoveSquare = lastMove && 
+        ((displayRow === lastMove[0] && colIndex === lastMove[1]) || 
+         (displayRow === lastMove[2] && colIndex === lastMove[3]));
+      const isAnimated = animatedSquare && displayRow === animatedSquare[0] && colIndex === animatedSquare[1];
 
-                return (
-                  <div
-                    key={`${displayRow}-${colIndex}`}
-                    className={`
-                      aspect-square flex items-center justify-center text-4xl cursor-pointer relative
-                      ${isEven ? 
-                        "bg-gradient-to-br from-[#1D3A54]/60 to-[#142943]/60" : 
-                        "bg-gradient-to-br from-[#0B1A2C]/90 to-[#0D1E34]/90"}
-                      ${isSelected ? "ring-2 ring-[#4cc9f0] ring-opacity-70" : ""}
-                      ${isLastMoveSquare ? 
-                        (isEven ? 
-                          "bg-gradient-to-br from-[#1D3A54]/80 to-[#00f9ff]/15" : 
-                          "bg-gradient-to-br from-[#0B1A2C]/90 to-[#00f9ff]/20") : ""}
-                      ${isAnimated ? "animate-pulse-scale" : ""}
-                      hover:bg-[#4cc9f0]/20 transition-all duration-200
-                    `}
-                    onClick={() => handleSquareClick(displayRow, colIndex)}
-                  >
-                    <span className={`
-                      ${piece?.color === "white" ? "text-white drop-shadow-glow-white" : "text-amber-400 drop-shadow-glow-amber"}
-                      ${isAnimated ? "scale-110 transition-transform duration-300" : ""}
-                    `}>
-                      {getPieceSymbol(piece)}
-                    </span>
+      return (
+        <div
+          key={`${displayRow}-${colIndex}`}
+          className={`
+            aspect-square flex items-center justify-center text-4xl cursor-pointer relative
+            ${isEven ? 
+              "bg-gradient-to-br from-[#1D3A54]/60 to-[#142943]/60" : 
+              "bg-gradient-to-br from-[#0B1A2C]/90 to-[#0D1E34]/90"}
+            ${isSelected ? "ring-2 ring-[#4cc9f0] ring-opacity-70" : ""}
+            ${isLastMoveSquare ? 
+              (isEven ? 
+                "bg-gradient-to-br from-[#1D3A54]/80 to-[#00f9ff]/15" : 
+                "bg-gradient-to-br from-[#0B1A2C]/90 to-[#00f9ff]/20") : ""}
+            ${isAnimated ? "animate-pulse-scale" : ""}
+            hover:bg-[#4cc9f0]/20 transition-all duration-200
+          `}
+          onClick={() => handleSquareClick(displayRow, colIndex)}
+        >
+          <span className={`
+            ${piece?.color === "white" ? "text-white drop-shadow-glow-white" : "text-amber-400 drop-shadow-glow-amber"}
+            ${isAnimated ? "scale-110 transition-transform duration-300" : ""}
+          `}>
+            {getPieceSymbol(piece)}
+          </span>
 
-                    {isValidMove && !isComputerTurn && gameStatus === null && (
-                      <div className="absolute w-5 h-5 rounded-full bg-[#4cc9f0]/30 border border-[#4cc9f0]/60 shadow-glow animate-pulse"></div>
-                    )}
+          {isValidMove && !isComputerTurn && gameStatus === null && (
+            <div className="absolute w-5 h-5 rounded-full bg-[#4cc9f0]/30 border border-[#4cc9f0]/60 shadow-glow animate-pulse"></div>
+          )}
 
-                    {/* Coordinates */}
-                    {colIndex === 0 && (
-                      <span className="absolute bottom-1 left-1 text-xs text-gray-400 font-bold">{8 - displayRow}</span>
-                    )}
-                    {displayRow === 7 && (
-                      <span className="absolute top-1 right-1 text-xs text-gray-400 font-bold">
-                        {String.fromCharCode(97 + colIndex)}
-                      </span>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
+          {/* Coordinates - now correctly positioned */}
+          {colIndex === 0 && (
+            <span className="absolute bottom-1 left-1 text-xs text-gray-400 font-bold">{8 - displayRow}</span>
+          )}
+          {displayRow === 7 && (
+            <span className="absolute top-1 right-1 text-xs text-gray-400 font-bold">
+              {String.fromCharCode(97 + colIndex)}
+            </span>
+          )}
+        </div>
+      );
+    })
+  )}
+</div>
 
           {/* Game info */}
           <div className="flex justify-between w-full max-w-md mt-4">
