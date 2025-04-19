@@ -139,52 +139,57 @@ export function ChessGame() {
   }
 
   // Calculate valid moves for a piece
-  function calculateValidMoves(row, col) {
-    const piece = board[row][col]
-    if (!piece) return []
-    const moves = []
-    const color = piece.color
-    const isWhite = color === "white"
+function calculateValidMoves(row, col) {
+  const piece = board[row][col];
+  if (!piece) return [];
+  const moves = [];
+  const color = piece.color;
+  
+  // For pawn movement direction, we need to consider the board orientation
+  const isWhite = color === "white";
+  // Since white is at bottom (row 6-7) and black at top (row 0-1)
+  // White pawns should move "up" (decreasing row index)
+  // Black pawns should move "down" (increasing row index)
+  const direction = isWhite ? -1 : 1; // Flipped from original
 
-    const addMoveIfValid = (r, c) => {
-      if (r < 0 || r > 7 || c < 0 || c > 7) return false
-      const targetPiece = board[r][c]
-      if (!targetPiece) {
-        moves.push([r, c])
-        return true
-      } else if (targetPiece.color !== color) {
-        moves.push([r, c])
-        return false
-      }
-      return false
+  const addMoveIfValid = (r, c) => {
+    if (r < 0 || r > 7 || c < 0 || c > 7) return false;
+    const targetPiece = board[r][c];
+    if (!targetPiece) {
+      moves.push([r, c]);
+      return true;
+    } else if (targetPiece.color !== color) {
+      moves.push([r, c]);
+      return false;
     }
+    return false;
+  };
 
-    if (piece.type === "pawn") {
-      const direction = isWhite ? 1 : -1
-      if (row + direction >= 0 && row + direction <= 7 && !board[row + direction][col]) {
-        moves.push([row + direction, col])
-        if (
-          !piece.hasMoved &&
-          row + 2 * direction >= 0 &&
-          row + 2 * direction <= 7 &&
-          !board[row + 2 * direction][col]
-        ) {
-          moves.push([row + 2 * direction, col])
-        }
-      }
-      if (col > 0 && row + direction >= 0 && row + direction <= 7) {
-        const leftDiag = board[row + direction][col - 1]
-        if (leftDiag && leftDiag.color !== color) {
-          moves.push([row + direction, col - 1])
-        }
-      }
-      if (col < 7 && row + direction >= 0 && row + direction <= 7) {
-        const rightDiag = board[row + direction][col + 1]
-        if (rightDiag && rightDiag.color !== color) {
-          moves.push([row + direction, col + 1])
-        }
+  if (piece.type === "pawn") {
+    // Forward movement
+    if (row + direction >= 0 && row + direction <= 7 && !board[row + direction][col]) {
+      moves.push([row + direction, col]);
+      // Double move from starting position
+      const startingRow = isWhite ? 6 : 1;
+      if (row === startingRow && !board[row + 2 * direction][col]) {
+        moves.push([row + 2 * direction, col]);
       }
     }
+    
+    // Diagonal captures
+    if (col > 0) {
+      const leftDiag = board[row + direction][col - 1];
+      if (leftDiag && leftDiag.color !== color) {
+        moves.push([row + direction, col - 1]);
+      }
+    }
+    if (col < 7) {
+      const rightDiag = board[row + direction][col + 1];
+      if (rightDiag && rightDiag.color !== color) {
+        moves.push([row + direction, col + 1]);
+      }
+    }
+  }
 
     if (piece.type === "rook" || piece.type === "queen") {
       for (let r = row - 1; r >= 0; r--) if (!addMoveIfValid(r, col)) break
