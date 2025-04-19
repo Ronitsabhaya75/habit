@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { GameWrapper } from "./game-wrapper"
+import { toast } from "@/components/ui/use-toast"
 
 const wordList = [
   "HABIT",
@@ -61,9 +63,9 @@ export function WordScrambler() {
 
   const handleStartGame = () => {
     setGameStarted(true)
+    setGameOver(false)
     setScore(0)
     setTimeLeft(30)
-    setGameOver(false)
     getNewWord()
   }
 
@@ -85,6 +87,15 @@ export function WordScrambler() {
           if (prev <= 1) {
             clearInterval(timer)
             setGameOver(true)
+            setGameStarted(false)
+
+            // Award XP
+            const earnedXP = Math.min(score, 10)
+            toast({
+              title: "Game Complete!",
+              description: `You earned ${earnedXP} XP!`,
+            })
+
             return 0
           }
           return prev - 1
@@ -93,60 +104,52 @@ export function WordScrambler() {
     }
 
     return () => clearInterval(timer)
-  }, [gameStarted, gameOver])
+  }, [gameStarted, gameOver, score])
+
+  const customControls = (
+    <div className="flex justify-between items-center mt-4">
+      <Badge className={timeLeft <= 10 ? "bg-red-500" : "bg-[#2a3343]"}>Time: {timeLeft}s</Badge>
+    </div>
+  )
 
   return (
-    <div className="flex flex-col items-center space-y-6">
-      {!gameStarted || gameOver ? (
-        <div className="text-center space-y-4">
-          <h3 className="text-xl font-bold text-white">Word Scrambler</h3>
-          <p className="text-gray-400">Unscramble as many words as you can in 30 seconds!</p>
-
-          {gameOver && (
-            <div className="my-4">
-              <h4 className="text-lg font-bold text-white">Game Over!</h4>
-              <p className="text-[#4cc9f0] text-2xl font-bold">{score} words</p>
-              <p className="text-white">You earned {Math.min(score, 10)} XP</p>
-            </div>
-          )}
-
-          <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={handleStartGame}>
-            {gameOver ? "Play Again" : "Start Game"}
-          </Button>
-        </div>
-      ) : (
-        <div className="w-full max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <Badge className="bg-[#4cc9f0] text-black">Score: {score}</Badge>
-            <Badge className={timeLeft <= 10 ? "bg-red-500" : "bg-[#2a3343]"}>Time: {timeLeft}s</Badge>
+    <GameWrapper
+      title="Word Scrambler"
+      description="Unscramble as many words as you can in 30 seconds!"
+      gameStarted={gameStarted}
+      gameOver={gameOver}
+      score={score}
+      onStart={handleStartGame}
+      onEnd={() => {
+        setGameOver(true)
+        setGameStarted(false)
+      }}
+      customControls={customControls}
+    >
+      <Card className="bg-[#2a3343] border-[#3a4353]">
+        <CardContent className="pt-6">
+          <div className="text-center mb-6">
+            <h3 className="text-lg text-gray-400 mb-2">Unscramble this word:</h3>
+            <div className="text-3xl font-bold tracking-wider text-white">{scrambledWord}</div>
           </div>
 
-          <Card className="bg-[#2a3343] border-[#3a4353]">
-            <CardContent className="pt-6">
-              <div className="text-center mb-6">
-                <h3 className="text-lg text-gray-400 mb-2">Unscramble this word:</h3>
-                <div className="text-3xl font-bold tracking-wider text-white">{scrambledWord}</div>
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              type="text"
+              value={userGuess}
+              onChange={(e) => setUserGuess(e.target.value)}
+              placeholder="Enter your guess"
+              className="bg-[#1a2332] border-[#3a4353] text-white text-center text-xl"
+              autoComplete="off"
+              autoFocus
+            />
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <Input
-                  type="text"
-                  value={userGuess}
-                  onChange={(e) => setUserGuess(e.target.value)}
-                  placeholder="Enter your guess"
-                  className="bg-[#1a2332] border-[#3a4353] text-white text-center text-xl"
-                  autoComplete="off"
-                  autoFocus
-                />
-
-                <Button type="submit" className="w-full bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black">
-                  Submit
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+            <Button type="submit" className="w-full bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black">
+              Submit
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </GameWrapper>
   )
 }

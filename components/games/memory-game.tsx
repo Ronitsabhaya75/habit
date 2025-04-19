@@ -3,29 +3,21 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { GameWrapper } from "./game-wrapper"
 import { toast } from "@/components/ui/use-toast"
-import { useAuth } from "@/context/auth-context"
-
-const emojis = ["🚀", "🌟", "🔥", "💎", "🎮", "🏆", "🎯", "🎲"]
-
-interface MemoryCard {
-  id: number
-  emoji: string
-  flipped: boolean
-  matched: boolean
-}
 
 export function MemoryGame() {
   const [gameStarted, setGameStarted] = useState(false)
-  const [cards, setCards] = useState<MemoryCard[]>([])
+  const [gameOver, setGameOver] = useState(false)
+  const [cards, setCards] = useState<{ id: number; emoji: string; flipped: boolean; matched: boolean }[]>([])
   const [flippedCards, setFlippedCards] = useState<number[]>([])
   const [matchedPairs, setMatchedPairs] = useState(0)
   const [moves, setMoves] = useState(0)
-  const [gameOver, setGameOver] = useState(false)
-  const { user, updateUser } = useAuth()
+  const [score, setScore] = useState(0)
 
+  // Initialize game
   const initializeGame = () => {
-    // Create pairs of cards with emojis
+    const emojis = ["🚀", "🌟", "🔥", "💎", "🎮", "🏆", "🎯", "🎲"]
     const cardPairs = [...emojis, ...emojis].map((emoji, index) => ({
       id: index,
       emoji,
@@ -43,8 +35,9 @@ export function MemoryGame() {
     setFlippedCards([])
     setMatchedPairs(0)
     setMoves(0)
-    setGameOver(false)
+    setScore(0)
     setGameStarted(true)
+    setGameOver(false)
   }
 
   const handleCardClick = (id: number) => {
@@ -67,6 +60,7 @@ export function MemoryGame() {
       setMoves(moves + 1)
 
       const [firstId, secondId] = newFlippedCards
+      const emojis = ["🚀", "🌟", "🔥", "💎", "🎮", "🏆", "🎯", "🎲"]
       if (cards[firstId].emoji === cards[secondId].emoji) {
         // Match found
         setTimeout(() => {
@@ -76,6 +70,7 @@ export function MemoryGame() {
           setCards(matchedCards)
           setFlippedCards([])
           setMatchedPairs(matchedPairs + 1)
+          setScore(score + 10)
 
           // Check if game is over
           if (matchedPairs + 1 === emojis.length) {
@@ -95,97 +90,64 @@ export function MemoryGame() {
     }
   }
 
-  const handleGameOver = async () => {
+  const handleGameOver = () => {
     setGameOver(true)
+    setGameStarted(false)
 
-    // Calculate XP earned based on moves
-    const xpEarned = Math.max(10 - Math.floor(moves / 2), 1)
+    // Calculate final score based on moves
+    const finalScore = Math.max(100 - moves * 5, 10)
+    setScore(finalScore)
 
-    try {
-      // Save game score to the database
-      const res = await fetch("/api/game-scores", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          game: "memory",
-          score: moves,
-          xpEarned,
-        }),
-      })
-
-      if (res.ok) {
-        // Update user XP in the UI
-        if (user) {
-          updateUser({
-            ...user,
-            xp: user.xp + xpEarned,
-          })
-        }
-
-        toast({
-          title: "Game Complete!",
-          description: `You earned ${xpEarned} XP!`,
-        })
-      }
-    } catch (error) {
-      console.error("Failed to save game score:", error)
-
-      // Still show success message even if API call fails
-      toast({
-        title: "Game Complete!",
-        description: `You earned ${xpEarned} XP! (Offline mode)`,
-      })
-    }
+    // Award XP
+    const earnedXP = Math.min(Math.floor(finalScore / 10), 10)
+    toast({
+      title: "Memory Game Complete!",
+      description: `You earned ${earnedXP} XP!`,
+    })
   }
 
-  return (
-    <div className="flex flex-col items-center space-y-6">
-      {!gameStarted || gameOver ? (
-        <div className="text-center space-y-4">
-          <h3 className="text-xl font-bold text-white">Memory Match</h3>
-          <p className="text-gray-400">Find all matching pairs with the fewest moves!</p>
+  const customControls = (
+    <div className="mt-4 flex justify-between">
+      <Badge className="bg-[#2a3343]">Moves: {moves}</Badge>
+      <Badge className="bg-[#4cc9f0] text-black">
+        Pairs: {matchedPairs}/{cards.length / 2}
+      </Badge>
 
-          {gameOver && (
-            <div className="my-4">
-              <h4 className="text-lg font-bold text-white">Game Complete!</h4>
-              <p className="text-[#4cc9f0] text-2xl font-bold">{moves} moves</p>
-              <p className="text-white">You earned {Math.max(10 - Math.floor(moves / 2), 1)} XP</p>
-            </div>
-          )}
-
-          <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={initializeGame}>
-            {gameOver ? "Play Again" : "Start Game"}
-          </Button>
-        </div>
-      ) : (
-        <div className="w-full max-w-md">
-          <div className="flex justify-between items-center mb-4">
-            <Badge className="bg-[#4cc9f0] text-black">
-              Pairs: {matchedPairs}/{emojis.length}
-            </Badge>
-            <Badge className="bg-[#2a3343]">Moves: {moves}</Badge>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2">
-            {cards.map((card) => (
-              <button
-                key={card.id}
-                className={`aspect-square flex items-center justify-center text-2xl rounded-md transition-all duration-300 ${
-                  card.flipped || card.matched
-                    ? "bg-[#4cc9f0] transform rotate-y-180"
-                    : "bg-[#2a3343] hover:bg-[#3a4353]"
-                }`}
-                onClick={() => handleCardClick(card.id)}
-                disabled={card.matched}
-              >
-                {card.flipped || card.matched ? card.emoji : ""}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <Button
+        variant="outline"
+        className="bg-[#2a3343] hover:bg-[#3a4353] text-white border-[#3a4353]"
+        onClick={handleGameOver}
+      >
+        End Game
+      </Button>
     </div>
+  )
+
+  return (
+    <GameWrapper
+      title="Memory Match"
+      description="Find all matching pairs with the fewest moves!"
+      gameStarted={gameStarted}
+      gameOver={gameOver}
+      score={score}
+      onStart={initializeGame}
+      onEnd={handleGameOver}
+      customControls={customControls}
+    >
+      <div className="grid grid-cols-4 gap-2">
+        {cards.map((card) => (
+          <button
+            key={card.id}
+            className={`aspect-square flex items-center justify-center text-2xl rounded-md transition-all duration-300 ${
+              card.flipped || card.matched ? "bg-[#4cc9f0] transform rotate-y-180" : "bg-[#2a3343] hover:bg-[#3a4353]"
+            }`}
+            onClick={() => handleCardClick(card.id)}
+            disabled={card.matched}
+          >
+            {card.flipped || card.matched ? card.emoji : ""}
+          </button>
+        ))}
+      </div>
+    </GameWrapper>
   )
 }

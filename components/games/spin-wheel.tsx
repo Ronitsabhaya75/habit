@@ -1,7 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
+import { GameWrapper } from "./game-wrapper"
+import { toast } from "@/components/ui/use-toast"
 
 const wheelItems = [
   { label: "5 XP", color: "#4cc9f0", value: 5 },
@@ -21,6 +23,8 @@ export function SpinWheel() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [rotation, setRotation] = useState(0)
   const [spinSpeed, setSpinSpeed] = useState(0)
+  const [score, setScore] = useState(0)
+  const [gameOver, setGameOver] = useState(false)
 
   useEffect(() => {
     if (gameStarted && canvasRef.current) {
@@ -48,7 +52,9 @@ export function SpinWheel() {
             const segmentSize = 360 / wheelItems.length
             const normalizedRotation = (360 - rotation) % 360
             const segmentIndex = Math.floor(normalizedRotation / segmentSize)
-            setResult(wheelItems[segmentIndex].value)
+            const spinResult = wheelItems[segmentIndex].value
+            setResult(spinResult)
+            setScore(score + spinResult)
 
             return 0
           }
@@ -57,7 +63,7 @@ export function SpinWheel() {
 
       return () => clearInterval(spinInterval)
     }
-  }, [spinning, spinSpeed])
+  }, [spinning, spinSpeed, rotation, score])
 
   const handleSpin = () => {
     if (!spinning) {
@@ -119,35 +125,63 @@ export function SpinWheel() {
     ctx.fill()
   }
 
-  return (
-    <div className="flex flex-col items-center space-y-6">
-      {!gameStarted ? (
-        <div className="text-center space-y-4">
-          <h3 className="text-xl font-bold text-white">Spin Wheel</h3>
-          <p className="text-gray-400">Spin the wheel and try your luck!</p>
-          <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={() => setGameStarted(true)}>
-            Start Game
-          </Button>
-        </div>
-      ) : (
-        <>
-          <div className="relative">
-            <canvas ref={canvasRef} width={300} height={300} className="border border-[#2a3343] rounded-full" />
-            {result !== null && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="bg-[#1a2332]/90 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-[#4cc9f0]">{result} XP</div>
-                  <p className="text-white">You won!</p>
-                </div>
-              </div>
-            )}
-          </div>
+  const handleStartGame = () => {
+    setGameStarted(true)
+    setGameOver(false)
+    setScore(0)
+    setResult(null)
+  }
 
-          <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={handleSpin} disabled={spinning}>
-            {spinning ? "Spinning..." : "Spin"}
-          </Button>
-        </>
-      )}
+  const handleEndGame = () => {
+    setGameOver(true)
+    setGameStarted(false)
+
+    // Award XP
+    const earnedXP = Math.min(score, 10)
+    toast({
+      title: "Game Complete!",
+      description: `You earned ${earnedXP} XP!`,
+    })
+  }
+
+  const customControls = (
+    <div className="mt-4 flex justify-between">
+      <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={handleSpin} disabled={spinning}>
+        {spinning ? "Spinning..." : "Spin"}
+      </Button>
+
+      <Button
+        variant="outline"
+        className="bg-[#2a3343] hover:bg-[#3a4353] text-white border-[#3a4353]"
+        onClick={handleEndGame}
+      >
+        End Game
+      </Button>
     </div>
+  )
+
+  return (
+    <GameWrapper
+      title="Spin Wheel"
+      description="Spin the wheel and try your luck!"
+      gameStarted={gameStarted}
+      gameOver={gameOver}
+      score={score}
+      onStart={handleStartGame}
+      onEnd={handleEndGame}
+      customControls={customControls}
+    >
+      <div className="relative">
+        <canvas ref={canvasRef} width={300} height={300} className="border border-[#2a3343] rounded-full" />
+        {result !== null && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-[#1a2332]/90 p-4 rounded-lg text-center">
+              <div className="text-2xl font-bold text-[#4cc9f0]">{result} XP</div>
+              <p className="text-white">You won!</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </GameWrapper>
   )
 }
