@@ -26,28 +26,35 @@ function initializeBoard() {
   const initialBoard = Array(8)
     .fill()
     .map(() => Array(8).fill(null))
+  // White pieces (bottom, row 6 and 7)
   for (let col = 0; col < 8; col++) {
     initialBoard[6][col] = { type: "pawn", color: "white", hasMoved: false }
-    initialBoard[1][col] = { type: "pawn", color: "black", hasMoved: false }
   }
   initialBoard[7][0] = { type: "rook", color: "white", hasMoved: false }
   initialBoard[7][7] = { type: "rook", color: "white", hasMoved: false }
-  initialBoard[0][0] = { type: "rook", color: "black", hasMoved: false }
-  initialBoard[0][7] = { type: "rook", color: "black", hasMoved: false }
   initialBoard[7][1] = { type: "knight", color: "white" }
   initialBoard[7][6] = { type: "knight", color: "white" }
-  initialBoard[0][1] = { type: "knight", color: "black" }
-  initialBoard[0][6] = { type: "knight", color: "black" }
   initialBoard[7][2] = { type: "bishop", color: "white" }
   initialBoard[7][5] = { type: "bishop", color: "white" }
+  initialBoard[7][3] = { type: "queen", color: "white" }
+  initialBoard[7][4] = { type: "king", color: "white", hasMoved: false }
+
+  // Black pieces (top, row 0 and 1)
+  for (let col = 0; col < 8; col++) {
+    initialBoard[1][col] = { type: "pawn", color: "black", hasMoved: false }
+  }
+  initialBoard[0][0] = { type: "rook", color: "black", hasMoved: false }
+  initialBoard[0][7] = { type: "rook", color: "black", hasMoved: false }
+  initialBoard[0][1] = { type: "knight", color: "black" }
+  initialBoard[0][6] = { type: "knight", color: "black" }
   initialBoard[0][2] = { type: "bishop", color: "black" }
   initialBoard[0][5] = { type: "bishop", color: "black" }
-  initialBoard[7][3] = { type: "queen", color: "white" }
   initialBoard[0][3] = { type: "queen", color: "black" }
-  initialBoard[7][4] = { type: "king", color: "white", hasMoved: false }
   initialBoard[0][4] = { type: "king", color: "black", hasMoved: false }
+
   return initialBoard
 }
+
 
 export function ChessGame() {
   const [board, setBoard] = useState(initializeBoard)
@@ -617,25 +624,22 @@ function handleSquareClick(row, col) {
 
           {/* Chess board */}
 {/* Chess board */}
-<div
-  className="grid grid-cols-8 gap-0 w-full max-w-md border border-[#4cc9f0]/30 rounded-lg overflow-hidden bg-[#0e1a40]/80 backdrop-blur-sm shadow-lg shadow-[#4cc9f0]/10 relative"
-  ref={boardRef}
->
+<div className="grid grid-cols-8 gap-0 w-full max-w-md border border-[#4cc9f0]/30 rounded-lg overflow-hidden bg-[#0e1a40]/80 backdrop-blur-sm shadow-lg shadow-[#4cc9f0]/10 relative">
   {board.map((row, rowIndex) =>
     row.map((piece, colIndex) => {
-      // Reverse the row index to display the board correctly (a1 at bottom-left)
+      // Render rows in reverse order (0 = top, 7 = bottom)
       const displayRow = 7 - rowIndex;
       const isEven = (displayRow + colIndex) % 2 === 0;
-      const isSelected = selectedPiece && selectedPiece[0] === displayRow && selectedPiece[1] === colIndex;
-      const isValidMove = validMoves.some(([r, c]) => r === displayRow && c === colIndex);
+      const isSelected = selectedPiece && selectedPiece[0] === rowIndex && selectedPiece[1] === colIndex;
+      const isValidMove = validMoves.some(([r, c]) => r === rowIndex && c === colIndex);
       const isLastMoveSquare = lastMove && 
-        ((displayRow === lastMove[0] && colIndex === lastMove[1]) || 
-         (displayRow === lastMove[2] && colIndex === lastMove[3]));
-      const isAnimated = animatedSquare && displayRow === animatedSquare[0] && colIndex === animatedSquare[1];
+        ((rowIndex === lastMove[0] && colIndex === lastMove[1]) || 
+         (rowIndex === lastMove[2] && colIndex === lastMove[3]));
+      const isAnimated = animatedSquare && rowIndex === animatedSquare[0] && colIndex === animatedSquare[1];
 
       return (
         <div
-          key={`${displayRow}-${colIndex}`}
+          key={`${rowIndex}-${colIndex}`}
           className={`
             aspect-square flex items-center justify-center text-4xl cursor-pointer relative
             ${isEven ? 
@@ -649,7 +653,7 @@ function handleSquareClick(row, col) {
             ${isAnimated ? "animate-pulse-scale" : ""}
             hover:bg-[#4cc9f0]/20 transition-all duration-200
           `}
-          onClick={() => handleSquareClick(displayRow, colIndex)}
+          onClick={() => handleSquareClick(rowIndex, colIndex)}
         >
           <span className={`
             ${piece?.color === "white" ? "text-white drop-shadow-glow-white" : "text-amber-400 drop-shadow-glow-amber"}
@@ -662,11 +666,11 @@ function handleSquareClick(row, col) {
             <div className="absolute w-5 h-5 rounded-full bg-[#4cc9f0]/30 border border-[#4cc9f0]/60 shadow-glow animate-pulse"></div>
           )}
 
-          {/* Coordinates - now correctly positioned */}
+          {/* Coordinates */}
           {colIndex === 0 && (
-            <span className="absolute bottom-1 left-1 text-xs text-gray-400 font-bold">{8 - displayRow}</span>
+            <span className="absolute bottom-1 left-1 text-xs text-gray-400 font-bold">{8 - rowIndex}</span>
           )}
-          {displayRow === 7 && (
+          {rowIndex === 7 && (
             <span className="absolute top-1 right-1 text-xs text-gray-400 font-bold">
               {String.fromCharCode(97 + colIndex)}
             </span>
@@ -676,6 +680,7 @@ function handleSquareClick(row, col) {
     })
   )}
 </div>
+
 
           {/* Game info */}
           <div className="flex justify-between w-full max-w-md mt-4">
