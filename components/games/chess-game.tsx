@@ -746,7 +746,7 @@ function handleSquareClick(row, col) {
           )}
 
           {/* Buttons */}
-{/*           <div className="flex gap-4 mt-6">
+          <div className="flex gap-4 mt-6">
             <Button 
               variant="outline"
               className="bg-[#0B1A2C] hover:bg-[#1a2332] text-white border-[#4cc9f0]/30 hover:border-[#4cc9f0]/50"
@@ -756,7 +756,7 @@ function handleSquareClick(row, col) {
             </Button>
           </div>
         </>
-      )} */}
+      )}
 
       {/* Add global styles for animations */}
       <style jsx global>{`
