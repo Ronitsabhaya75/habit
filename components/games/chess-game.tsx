@@ -22,18 +22,6 @@ const pieces = {
   blackKing: "♚",
 }
 
-// Space theme colors
-const spaceTheme = {
-  deepSpace: '#0B1A2C',
-  deepSpaceAlt: '#142943',
-  deepSpaceLight: '#1D3A54',
-  accentGlow: '#00FFC6',
-  accentGold: '#FFD580',
-  accentOrange: '#FF7F50',
-  textPrimary: '#D0E7FF',
-  highlight: '#FFFA81',
-}
-
 // Define board initialization function
 function initializeBoard() {
   const initialBoard = Array(8)
@@ -77,8 +65,6 @@ export function ChessGame() {
   const [movesHistory, setMovesHistory] = useState([])
   const [animatedSquare, setAnimatedSquare] = useState(null)
   const [gameStarted, setGameStarted] = useState(false)
-  const [newCapturedPiece, setNewCapturedPiece] = useState(null)
-  const [scoreChange, setScoreChange] = useState(null)
   const boardRef = useRef(null)
   const animationTimeoutRef = useRef(null)
 
@@ -247,12 +233,6 @@ export function ChessGame() {
     return moves
   }
 
-  function createCaptureParticles(row, col) {
-    // Particle effect would be implemented here
-    // For now, we'll just log it
-    console.log(`Capture effect at ${row},${col}`)
-  }
-
   // Enhanced move function with effects
   function makeMove(fromRow, fromCol, toRow, toCol) {
     if (animationTimeoutRef.current) {
@@ -280,9 +260,6 @@ export function ChessGame() {
 
       scoreBonus = pieceValues[capturedPiece.type] || 0
 
-      // Create capture effect
-      createCaptureParticles(toRow, toCol)
-
       setCapturedPieces((prev) => ({
         ...prev,
         [capturedPiece.color === "white" ? "white" : "black"]: [
@@ -290,11 +267,6 @@ export function ChessGame() {
           capturedPiece,
         ],
       }))
-
-      setNewCapturedPiece({
-        piece: capturedPiece,
-        timestamp: Date.now()
-      })
 
       if (capturedPiece.type === "king") {
         if (capturedPiece.color === "black") {
@@ -329,7 +301,6 @@ export function ChessGame() {
 
     if (scoreBonus > 0) {
       setPlayerScore((prevScore) => prevScore + scoreBonus)
-      setScoreChange({ value: `+${scoreBonus}`, timestamp: Date.now() })
     }
 
     if (movingPiece.type === "pawn" || movingPiece.type === "king" || movingPiece.type === "rook") {
@@ -346,7 +317,6 @@ export function ChessGame() {
       // Bonus for promotion
       if (movingPiece.color === "white") {
         setPlayerScore((prevScore) => prevScore + 2)
-        setScoreChange({ value: "+2", timestamp: Date.now() })
         toast({
           title: "Pawn Promotion!",
           description: "Your pawn has been promoted to a Queen (+2 points)",
@@ -472,7 +442,6 @@ export function ChessGame() {
         setGameStatus("victory")
         const bonusPoints = 15 // Higher bonus for checkmate
         setPlayerScore((prevScore) => prevScore + bonusPoints)
-        setScoreChange({ value: `+${bonusPoints}`, timestamp: Date.now() })
         setWinStreak((prev) => prev + 1)
         setIsThinking(false)
         setIsComputerTurn(false)
@@ -515,8 +484,6 @@ export function ChessGame() {
     setLastMove(null)
     setMovesHistory([])
     setAnimatedSquare(null)
-    setNewCapturedPiece(null)
-    setScoreChange(null)
     setGameStarted(true)
   }
 
@@ -529,108 +496,34 @@ export function ChessGame() {
   }
 
   return (
-    <div className="flex flex-col items-center space-y-6 min-h-screen bg-gradient-to-br from-[#0B1A2C] to-[#142943] text-[#D0E7FF] p-4 relative overflow-hidden">
-      {/* Background stars */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute rounded-full bg-white animate-pulse"
-            style={{
-              width: `${Math.random() * 3 + 1}px`,
-              height: `${Math.random() * 3 + 1}px`,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              opacity: Math.random() * 0.6 + 0.2,
-              animationDuration: `${Math.random() * 3 + 2}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Orbit ring */}
-      <div className="absolute top-1/2 left-1/2 w-[800px] h-[800px] border border-dashed border-white/5 rounded-full transform -translate-x-1/2 -translate-y-1/2 animate-[orbit_120s_linear_infinite] z-1">
-        <div className="absolute w-2 h-2 bg-[#FFD580] rounded-full top-[5%] left-1/2 shadow-[0_0_10px_#FFD580,0_0_20px_#FFD580]"></div>
-      </div>
-
+    <div className="flex flex-col items-center space-y-6">
       {!gameStarted ? (
-        <div className="text-center space-y-4 z-10">
-          <h1 className="text-3xl font-bold text-[#00FFC6] font-orbitron tracking-wider animate-[glowPulse_3s_ease-in-out_infinite]">
-            Cosmic Chess
-          </h1>
-          <div className="text-[#D0E7FF]/80 font-exo2 font-light tracking-wider">
-            Galactic Strategy Arena
-          </div>
-          <Button 
-            className="bg-gradient-to-r from-[#00FFC6] to-[#4A90E2] hover:from-[#00FFC6]/90 hover:to-[#4A90E2]/90 text-black font-bold py-3 px-6 rounded-lg transition-all hover:scale-105 shadow-lg"
-            onClick={() => setGameStarted(true)}
-          >
+        <div className="text-center space-y-4">
+          <h3 className="text-xl font-bold text-white">Cosmic Chess</h3>
+          <p className="text-gray-400">Challenge your strategic thinking with a game of chess.</p>
+          <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={() => setGameStarted(true)}>
             Start Game
           </Button>
         </div>
       ) : (
         <>
-          {winStreak > 0 && (
-            <div className={`absolute top-2 right-2 bg-[#0B1A2C]/85 border rounded-lg px-3 py-1 flex items-center gap-1 text-sm z-10 ${
-              winStreak >= 3 ? "border-[#FFD580] text-[#FFD580] shadow-[0_0_10px_rgba(255,213,128,0.3)] animate-[pulseGlow_3s_ease-in-out_infinite]" : "border-[#00FFC6]/20 text-[#D0E7FF]"
-            }`}>
-              <span>🔥</span>
-              <span>Win Streak: {winStreak}</span>
-            </div>
-          )}
-
-          {movesHistory.length > 0 && (
-            <div className="absolute top-14 right-2 bg-[#0B1A2C]/85 border border-[#00FFC6]/20 rounded-lg p-2 text-xs w-28 max-h-36 overflow-y-auto z-10">
-              <div className="font-bold text-[#00FFC6] mb-1 text-center">Moves</div>
-              {movesHistory.slice(-8).map((move, index) => (
-                <div key={index} className="flex justify-between py-1 border-b border-[#00FFC6]/10 last:border-0">
-                  <span>{Math.floor(index/2) + 1}.</span>
-                  <span className={move.color === "white" ? "text-white" : "text-[#FFD580]"}>
-                    {move.move}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className={`flex items-center gap-2 bg-[#0B1A2C]/85 border rounded-xl px-4 py-2 mb-2 z-10 ${
-            isWhiteTurn && !isComputerTurn ? "border-[#00FFC6] animate-[holographicText_6s_linear_infinite]" : "border-[#00FFC6]/30"
-          }`}>
-            {isComputerTurn ? (
-              <>
-                <span>Computer is thinking</span>
-                <span className="text-[#FF7F50] animate-[blink_1s_infinite]">•</span>
-              </>
-            ) : (
-              <span>🛰️ Your Move, Commander</span>
-            )}
+          <div className="flex justify-between w-full max-w-md mb-2">
+            <Badge className="bg-[#4cc9f0] text-black">Score: {playerScore}</Badge>
+            {winStreak > 0 && <Badge className="bg-amber-500 text-black">🔥 Streak: {winStreak}</Badge>}
+            {isComputerTurn && <Badge className="bg-[#2a3343] animate-pulse">Computer thinking...</Badge>}
           </div>
 
-          <div className="flex justify-between w-full max-w-md mb-2 z-10">
-            <div className="flex gap-1 bg-[#0B1A2C]/80 border border-[#00FFC6]/20 rounded-lg px-3 py-2 relative">
-              <div className="absolute -top-2 left-2 bg-[#0B1A2C] px-1 text-xs rounded text-[#00FFC6]">Captured</div>
+          <div className="flex justify-between w-full max-w-md mb-2">
+            <div className="flex gap-1">
               {capturedPieces.black.map((piece, i) => (
-                <span 
-                  key={i} 
-                  className="text-[#FFD580] text-xl"
-                  style={{
-                    textShadow: '0 0 6px rgba(255, 213, 128, 0.5)'
-                  }}
-                >
+                <span key={i} className="text-amber-400 text-lg">
                   {getPieceSymbol(piece)}
                 </span>
               ))}
             </div>
-            <div className="flex gap-1 bg-[#0B1A2C]/80 border border-[#00FFC6]/20 rounded-lg px-3 py-2 relative">
-              <div className="absolute -top-2 left-2 bg-[#0B1A2C] px-1 text-xs rounded text-[#FF7F50]">Lost</div>
+            <div className="flex gap-1">
               {capturedPieces.white.map((piece, i) => (
-                <span 
-                  key={i} 
-                  className="text-white text-xl"
-                  style={{
-                    textShadow: '0 0 6px rgba(184, 255, 249, 0.5)'
-                  }}
-                >
+                <span key={i} className="text-white text-lg">
                   {getPieceSymbol(piece)}
                 </span>
               ))}
@@ -638,125 +531,73 @@ export function ChessGame() {
           </div>
 
           <div
-            className="grid grid-cols-8 gap-0 w-full max-w-md border border-[#00FFC6]/30 rounded-md overflow-hidden shadow-lg relative z-10"
+            className="grid grid-cols-8 gap-0 w-full max-w-md border border-[#4cc9f0]/30 rounded-md overflow-hidden"
             ref={boardRef}
-            style={{
-              background: "rgba(14, 26, 64, 0.8)",
-              backdropFilter: "blur(8px)",
-            }}
           >
             {board.map((row, rowIndex) =>
               row.map((piece, colIndex) => {
                 const isEven = (rowIndex + colIndex) % 2 === 0
-                const isSelected = selectedPiece && selectedPiece[0] === rowIndex && selectedPiece[1] === colIndex
-                const isValidMove = validMoves.some(([r, c]) => r === rowIndex && c === colIndex)
-                const isLastMoveSquare = lastMove && 
-                  ((rowIndex === lastMove[0] && colIndex === lastMove[1]) || (rowIndex === lastMove[2] && colIndex === lastMove[3]))
-                const isAnimated = animatedSquare && rowIndex === animatedSquare[0] && colIndex === animatedSquare[1]
+                const isSelected = selectedPiece && selectedPiece[0] === 7 - rowIndex && selectedPiece[1] === colIndex
+                const isValidMove = validMoves.some(([r, c]) => r === 7 - rowIndex && c === colIndex)
+                const isLastMoveSquare =
+                  lastMove &&
+                  ((7 - rowIndex === lastMove[0] && colIndex === lastMove[1]) ||
+                    (7 - rowIndex === lastMove[2] && colIndex === lastMove[3]))
 
                 return (
                   <div
                     key={`${rowIndex}-${colIndex}`}
                     className={`
-                      aspect-square flex items-center justify-center text-3xl cursor-pointer relative
-                      ${isEven ? 
-                        "bg-[linear-gradient(135deg,rgba(29,58,84,0.6)_0%,rgba(20,41,67,0.6)_100%),repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,255,198,0.02)_10px,rgba(0,255,198,0.02)_20px)]" : 
-                        "bg-[linear-gradient(135deg,rgba(11,26,44,0.9)_0%,rgba(13,30,52,0.9)_100%),repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(0,255,198,0.01)_10px,rgba(0,255,198,0.01)_20px)]"
-                      }
-                      ${isSelected ? "after:content-[''] after:absolute after:inset-0 after:border-2 after:border-[#00FFC6] after:border-opacity-70 after:shadow-[inset_0_0_12px_#00FFC6,0_0_12px_#00FFC6] after:animate-[pulseGlow_2s_ease-in-out_infinite]" : ""}
-                      ${isValidMove && !isComputerTurn && gameStatus === null ? 
-                        "after:content-[''] after:absolute after:w-5 after:h-5 after:rounded-full after:bg-[#00FFC6]/30 after:border after:border-[#00FFC6]/60 after:top-1/2 after:left-1/2 after:-translate-x-1/2 after:-translate-y-1/2 after:shadow-[0_0_12px_#00FFC6] after:animate-[pulseGlow_2s_ease-in-out_infinite]" : 
-                        ""
-                      }
-                      ${isLastMoveSquare ? 
-                        (isEven ? 
-                          "bg-[linear-gradient(135deg,rgba(29,58,84,0.8)_0%,rgba(0,249,255,0.15)_100%)] shadow-[inset_0_0_10px_rgba(0,249,255,0.15)]" : 
-                          "bg-[linear-gradient(135deg,rgba(11,26,44,0.9)_0%,rgba(0,249,255,0.2)_100%)] shadow-[inset_0_0_10px_rgba(0,249,255,0.15)]"
-                        ) : 
-                        ""
-                      }
-                      transition-all duration-200
-                      ${!isComputerTurn && gameStatus === null ? "hover:bg-[#00FFC6]/20" : ""}
-                      ${isAnimated ? "animate-[move_0.3s_ease-out]" : ""}
+                      aspect-square flex items-center justify-center text-2xl cursor-pointer relative
+                      ${isEven ? "bg-[#3a4353]" : "bg-[#2a3343]"}
+                      ${isSelected ? "ring-2 ring-[#4cc9f0] ring-opacity-70" : ""}
+                      ${isLastMoveSquare ? "bg-[#4cc9f0]/10" : ""}
+                      ${isValidMove ? "after:absolute after:w-3 after:h-3 after:rounded-full after:bg-[#4cc9f0]/30" : ""}
+                      hover:bg-[#4cc9f0]/20 transition-colors
                     `}
-                    onClick={() => handleSquareClick(rowIndex, colIndex)}
+                    onClick={() => handleSquareClick(7 - rowIndex, colIndex)}
                   >
-                    <span 
-                      className={`
-                        ${piece?.color === "white" ? 
-                          "text-white drop-shadow-[0_0_6px_rgba(184,255,249,0.7)]" : 
-                          "text-[#FFD580] drop-shadow-[0_0_6px_rgba(255,213,128,0.7)]"
-                        }
-                        ${isAnimated ? "animate-pulse" : ""}
-                      `}
-                    >
+                    <span className={piece?.color === "white" ? "text-white" : "text-amber-400"}>
                       {getPieceSymbol(piece)}
                     </span>
 
                     {/* Coordinates */}
                     {colIndex === 0 && (
-                      <span className="absolute bottom-1 left-1 text-xs text-[#D0E7FF]/60 font-bold">
-                        {8 - rowIndex}
-                      </span>
+                      <span className="absolute bottom-0.5 left-1 text-xs text-gray-400">{8 - rowIndex}</span>
                     )}
                     {rowIndex === 7 && (
-                      <span className="absolute top-1 right-1 text-xs text-[#D0E7FF]/60 font-bold">
+                      <span className="absolute top-0.5 right-1 text-xs text-gray-400">
                         {String.fromCharCode(97 + colIndex)}
                       </span>
                     )}
                   </div>
                 )
-              })
+              }),
             )}
           </div>
 
-          <div className="flex justify-between w-full max-w-md z-10">
-            <div className="bg-[#0B1A2C]/80 border border-[#00FFC6]/30 rounded-lg px-4 py-2">
-              {isWhiteTurn ? "White's Turn" : "Black's Turn"}
-            </div>
-            <div className="bg-[#0B1A2C]/80 border border-[#00FFC6]/30 rounded-lg px-4 py-2 flex items-center gap-1">
-              <span className="text-[#FFD580]">✦</span>
-              <span>Rank:</span>
-              <span className="text-[#00FFC6] font-bold">{getCurrentRank()}</span>
-            </div>
-          </div>
-
           {gameStatus && (
-            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 animate-[warping_0.3s_ease-out]">
-              <div className={`bg-[#0B1A2C] border rounded-xl p-6 text-center max-w-md w-full mx-4 ${
-                gameStatus === "victory" ? 
-                "border-[#00FFC6]/30 shadow-[0_10px_50px_rgba(0,0,0,0.3),0_0_20px_#00FFC6]" : 
-                "border-[#FF7F50]/30 shadow-[0_10px_50px_rgba(0,0,0,0.3),0_0_20px_#FF7F50]"
-              }`}>
-                <h2 className={`text-3xl mb-4 font-orbitron ${
-                  gameStatus === "victory" ? 
-                  "text-[#00FFC6] shadow-[0_0_10px_#00FFC6] animate-[glowPulse_3s_ease-in-out_infinite]" : 
-                  "text-[#FF7F50] shadow-[0_0_10px_#FF7F50] animate-[glowPulse_3s_ease-in-out_infinite]"
-                }`}>
-                  {gameStatus === "victory" ? "Victory!" : "Defeat!"}
-                </h2>
-                {gameStatus === "victory" && (
-                  <>
-                    <p className="text-[#D0E7FF] mb-2">Rank: {getCurrentRank()}</p>
-                    <p className="text-[#FFD580] text-xl mb-6 shadow-[0_0_8px_rgba(255,213,128,0.7)]">
-                      <span>✦</span> {10 + (winStreak >= 3 ? 5 : 0)} XP earned
-                    </p>
-                  </>
-                )}
-                <Button 
-                  className="bg-gradient-to-r from-[#00FFC6] to-[#4A90E2] hover:from-[#00FFC6]/90 hover:to-[#4A90E2]/90 text-black font-bold py-3 px-6 rounded-lg transition-all hover:scale-105 shadow-lg w-full"
-                  onClick={resetBoard}
-                >
-                  Play Again
-                </Button>
-              </div>
+            <div className="bg-[#1a2332]/90 border border-[#4cc9f0]/30 rounded-lg p-4 text-center">
+              <h3 className="text-xl font-bold mb-2 text-[#4cc9f0]">
+                {gameStatus === "victory" ? "Victory!" : "Defeat!"}
+              </h3>
+              {gameStatus === "victory" && (
+                <>
+                  <p className="text-white mb-2">Rank: {getCurrentRank()}</p>
+                  <p className="text-amber-400 mb-4">+{10 + (winStreak >= 3 ? 5 : 0)} XP earned</p>
+                </>
+              )}
+              <Button className="bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={resetBoard}>
+                Play Again
+              </Button>
             </div>
           )}
 
           {!gameStatus && (
-            <div className="flex space-x-4 z-10">
+            <div className="flex space-x-4">
               <Button
-                className="bg-[#0B1A2C] hover:bg-[#142943] text-[#D0E7FF] border border-[#00FFC6]/30 rounded-lg px-6 py-2 transition-all"
+                variant="outline"
+                className="bg-[#2a3343] hover:bg-[#3a4353] text-white border-[#3a4353]"
                 onClick={resetBoard}
               >
                 Restart
