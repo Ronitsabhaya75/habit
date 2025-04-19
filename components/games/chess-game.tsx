@@ -145,12 +145,9 @@ function calculateValidMoves(row, col) {
   const moves = [];
   const color = piece.color;
   
-  // For pawn movement direction, we need to consider the board orientation
+  // For pawn movement direction
   const isWhite = color === "white";
-  // Since white is at bottom (row 6-7) and black at top (row 0-1)
-  // White pawns should move "up" (decreasing row index)
-  // Black pawns should move "down" (increasing row index)
-  const direction = isWhite ? -1 : 1; // Flipped from original
+  const direction = isWhite ? -1 : 1; // White moves up (decreasing row), black moves down (increasing row)
 
   const addMoveIfValid = (r, c) => {
     if (r < 0 || r > 7 || c < 0 || c > 7) return false;
@@ -749,7 +746,7 @@ function handleSquareClick(row, col) {
           )}
 
           {/* Buttons */}
-          <div className="flex gap-4 mt-6">
+{/*           <div className="flex gap-4 mt-6">
             <Button 
               variant="outline"
               className="bg-[#0B1A2C] hover:bg-[#1a2332] text-white border-[#4cc9f0]/30 hover:border-[#4cc9f0]/50"
@@ -759,7 +756,7 @@ function handleSquareClick(row, col) {
             </Button>
           </div>
         </>
-      )}
+      )} */}
 
       {/* Add global styles for animations */}
       <style jsx global>{`
