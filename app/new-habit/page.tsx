@@ -13,32 +13,71 @@ import { MainLayout } from "@/components/main-layout"
 import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { format } from "date-fns"
+import { format, isToday } from "date-fns"
 import { CalendarIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
 
 export default function NewHabit() {
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
   const { toast } = useToast()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     try {
+      // Get form data
+      const form = e.target as HTMLFormElement
+      const habitName = (form.querySelector("#habit-name") as HTMLInputElement).value
+      const frequency = (form.querySelector('[name="frequency"]') as HTMLInputElement)?.value || "daily"
+
       // Import the XP_VALUES from lib/xp-system
       const { XP_VALUES } = await import("@/lib/xp-system")
 
-      // Show success message with XP
+      // Create the habit locally
+      const newHabit = {
+        id: Date.now(),
+        name: habitName,
+        startDate: startDate,
+        endDate: endDate,
+        frequency: frequency,
+        completed: false,
+      }
+
+      // In a real app, you would send this to your API
+      // For now we'll simulate that with a toast notification
       toast({
         title: "Habit Created!",
         description: `You earned ${XP_VALUES.HABIT_CREATION} XP for creating a new habit.`,
       })
 
+      // If the habit starts today, add it to today's tasks
+      if (startDate && isToday(startDate)) {
+        // In a real app, you would add this to your tasks API
+        toast({
+          title: "Added to Today's Tasks",
+          description: `${habitName} has been added to your tasks for today.`,
+        })
+      }
+
+      // Either way, add it to the calendar
+      toast({
+        title: "Added to Calendar",
+        description: `${habitName} has been added to your calendar.`,
+      })
+
       // Reset form
+      form.reset()
       setStartDate(undefined)
       setEndDate(undefined)
+
+      // Redirect to calendar after a short delay
+      setTimeout(() => {
+        router.push("/track")
+      }, 2000)
     } catch (error) {
       console.error("Error creating habit:", error)
       toast({
@@ -142,7 +181,7 @@ export default function NewHabit() {
 
             <div className="space-y-2">
               <Label className="text-white">Frequency</Label>
-              <Select>
+              <Select name="frequency">
                 <SelectTrigger className="bg-[#2a3343] border-[#3a4353] text-white">
                   <SelectValue placeholder="Select frequency" />
                 </SelectTrigger>

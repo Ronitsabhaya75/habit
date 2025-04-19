@@ -64,13 +64,14 @@ export function PerformanceChart({ type, userData }: PerformanceChartProps) {
           })
         }
 
-        // Create a realistic progression pattern (starting lower, gradually increasing)
+        // Generate fallback data
         const fallbackData = days.map((day, index) => {
-          // Base value that increases each day to show progress
-          const baseValue = 20 + index * 5
+          // For new users, start from 0 and show gradual small progress
+          // Base value starts very low and increases slightly each day
+          const baseValue = index * 3
 
-          // Add slight variation but maintain the upward trend
-          const variation = Math.floor(Math.random() * 10) - 3
+          // Add minimal variation to keep the trend upward but realistic for beginners
+          const variation = Math.floor(Math.random() * 3)
 
           return {
             day: day.day,

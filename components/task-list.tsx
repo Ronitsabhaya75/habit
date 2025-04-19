@@ -1,42 +1,90 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Pencil, Trash2 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useTasks, type Task } from "./task-context"
+import { useToast } from "@/components/ui/use-toast"
 
 interface TaskListProps {
   date?: Date
 }
 
 export function TaskList({ date = new Date() }: TaskListProps) {
-  const [tasks, setTasks] = useState<{ id: number; title: string; completed: boolean; date: Date }[]>([
-    { id: 1, title: "Morning meditation", completed: false, date: new Date() },
-    { id: 2, title: "Read for 30 minutes", completed: true, date: new Date() },
-  ])
+  const { tasks, addTask, updateTask, removeTask, getTasksForDate } = useTasks()
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
+  const [editingTask, setEditingTask] = useState<{ id: number | string; title: string } | null>(null)
+  const [newTaskTitle, setNewTaskTitle] = useState("")
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const { toast } = useToast()
 
-  const [editingTask, setEditingTask] = useState<{ id: number; title: string } | null>(null)
+  // Filter tasks based on the selected date
+  useEffect(() => {
+    if (date) {
+      setFilteredTasks(getTasksForDate(date))
+    }
+  }, [date, tasks, getTasksForDate])
 
-  const toggleTask = (id: number) => {
-    setTasks(tasks.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)))
-  }
+  const toggleTask = (id: number | string) => {
+    const task = tasks.find((t) => t.id === id)
+    if (task) {
+      updateTask(id, { completed: !task.completed })
 
-  const deleteTask = (id: number) => {
-    setTasks(tasks.filter((task) => task.id !== id))
-  }
-
-  const updateTask = () => {
-    if (editingTask && editingTask.title.trim()) {
-      setTasks(tasks.map((task) => (task.id === editingTask.id ? { ...task, title: editingTask.title } : task)))
-      setEditingTask(null)
+      // Provide feedback on completed task
+      if (!task.completed) {
+        toast({
+          title: "Task Completed!",
+          description: "Great job on completing your task!",
+        })
+      }
     }
   }
 
-  // Filter tasks for the selected date
-  const filteredTasks = tasks.filter((task) => task.date.toDateString() === date.toDateString())
+  const handleAddTask = () => {
+    if (newTaskTitle.trim()) {
+      addTask({
+        title: newTaskTitle,
+        completed: false,
+        date: date,
+      })
+
+      setNewTaskTitle("")
+      setDialogOpen(false)
+
+      toast({
+        title: "Task Added",
+        description: `New task "${newTaskTitle}" added for ${date.toLocaleDateString()}.`,
+      })
+    }
+  }
+
+  const deleteTask = (id: number | string) => {
+    const task = tasks.find((t) => t.id === id)
+    if (task) {
+      removeTask(id)
+
+      toast({
+        title: "Task Deleted",
+        description: `Task "${task.title}" has been removed.`,
+      })
+    }
+  }
+
+  const updateTaskTitle = (id: number | string, newTitle: string) => {
+    if (newTitle.trim()) {
+      updateTask(id, { title: newTitle })
+      setEditingTask(null)
+
+      toast({
+        title: "Task Updated",
+        description: "Your task has been updated successfully.",
+      })
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -53,15 +101,43 @@ export function TaskList({ date = new Date() }: TaskListProps) {
                 onCheckedChange={() => toggleTask(task.id)}
                 className="text-[#4cc9f0] border-[#4cc9f0]"
               />
-              <label
-                htmlFor={`task-${task.id}`}
-                className={`text-white flex-1 cursor-pointer ${task.completed ? "line-through text-gray-400" : ""}`}
-              >
-                {task.title}
-              </label>
-              <div className="flex space-x-1">
-                <Dialog>
-                  <DialogTrigger asChild>
+
+              {editingTask && editingTask.id === task.id ? (
+                <div className="flex-1 flex items-center space-x-2">
+                  <Input
+                    value={editingTask.title}
+                    onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                    className="bg-[#2a3343] border-[#3a4353] text-white"
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => updateTaskTitle(task.id, editingTask.title)}
+                    className="h-8 w-8 p-0 text-green-500"
+                  >
+                    ✓
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setEditingTask(null)}
+                    className="h-8 w-8 p-0 text-red-500"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <label
+                    htmlFor={`task-${task.id}`}
+                    className={`text-white flex-1 cursor-pointer ${task.completed ? "line-through text-gray-400" : ""}`}
+                  >
+                    {task.title}
+                    {task.isHabit && <span className="text-sm opacity-80 ml-2">(daily habit)</span>}
+                  </label>
+
+                  <div className="flex space-x-1">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -70,43 +146,50 @@ export function TaskList({ date = new Date() }: TaskListProps) {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-[#1a2332] border-[#2a3343] text-white">
-                    <DialogHeader>
-                      <DialogTitle>Edit Task</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="edit-task-title">Task Name</Label>
-                        <Input
-                          id="edit-task-title"
-                          placeholder="Enter task name"
-                          value={editingTask?.title || ""}
-                          onChange={(e) => setEditingTask((prev) => (prev ? { ...prev, title: e.target.value } : null))}
-                          className="bg-[#2a3343] border-[#3a4353] text-white"
-                        />
-                      </div>
-                      <Button className="w-full bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={updateTask}>
-                        Update Task
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-400 hover:text-red-500"
-                  onClick={() => deleteTask(task.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-red-500"
+                      onClick={() => deleteTask(task.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
       ) : (
         <div className="text-center py-8 text-gray-400">No tasks for this date. Add a task to get started!</div>
       )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogTrigger asChild>
+          <Button className="w-full bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black">+ Add Task</Button>
+        </DialogTrigger>
+        <DialogContent className="bg-[#1a2332] border-[#2a3343] text-white">
+          <DialogHeader>
+            <DialogTitle>Add New Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="task-title">Task Name</Label>
+              <Input
+                id="task-title"
+                placeholder="Enter task name"
+                value={newTaskTitle}
+                onChange={(e) => setNewTaskTitle(e.target.value)}
+                className="bg-[#2a3343] border-[#3a4353] text-white"
+              />
+            </div>
+            <Button className="w-full bg-[#4cc9f0] hover:bg-[#4cc9f0]/80 text-black" onClick={handleAddTask}>
+              Add Task
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -34,17 +34,17 @@ export function Leaderboard() {
         }
 
         const data = await res.json()
-        if (data.success) {
+        if (data.success && data.data && data.data.length > 0) {
+          // If we have real data, use it
           setLeaderboardData(data.data)
         } else {
+          // If API returns empty data, use fallback
           setError(true)
-          // Use placeholder data as fallback
           setLeaderboardData(generatePlaceholderData())
         }
       } catch (error) {
         console.error("Leaderboard error:", error)
         setError(true)
-        // Use placeholder data as fallback
         setLeaderboardData(generatePlaceholderData())
       } finally {
         setLoading(false)

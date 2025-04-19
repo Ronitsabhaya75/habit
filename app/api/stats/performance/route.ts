@@ -30,8 +30,25 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // In a real implementation, you would query your database for completed tasks, habits, and games
-    // For now, we'll generate realistic data that shows progress over time
+    // Check if user is new (registered less than 7 days ago)
+    const isNewUser = new Date().getTime() - new Date(user.createdAt).getTime() < 7 * 24 * 60 * 60 * 1000
+
+    // For new users, show minimal starting XP
+    if (isNewUser) {
+      const performanceData = days.map((day, index) => {
+        // For new users, start from 0 and show very gradual progress
+        const daysRegistered = Math.max(0, 6 - index) // How many days since registration (0 for day of registration)
+
+        return {
+          day: day.day,
+          xp: Math.max(0, daysRegistered * 2), // Minimal XP gain per day
+        }
+      })
+
+      return NextResponse.json({ success: true, data: performanceData }, { status: 200 })
+    }
+
+    // For existing users, generate more realistic data showing progress
     const performanceData = days.map((day, index) => {
       // Base value that increases each day to show progress
       const baseValue = 20 + index * 5
