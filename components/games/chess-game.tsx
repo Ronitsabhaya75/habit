@@ -27,25 +27,25 @@ function initializeBoard() {
     .fill()
     .map(() => Array(8).fill(null))
   for (let col = 0; col < 8; col++) {
-    initialBoard[1][col] = { type: "pawn", color: "white", hasMoved: false }
-    initialBoard[6][col] = { type: "pawn", color: "black", hasMoved: false }
+    initialBoard[6][col] = { type: "pawn", color: "white", hasMoved: false }
+    initialBoard[1][col] = { type: "pawn", color: "black", hasMoved: false }
   }
-  initialBoard[0][0] = { type: "rook", color: "white", hasMoved: false }
-  initialBoard[0][7] = { type: "rook", color: "white", hasMoved: false }
-  initialBoard[7][0] = { type: "rook", color: "black", hasMoved: false }
-  initialBoard[7][7] = { type: "rook", color: "black", hasMoved: false }
-  initialBoard[0][1] = { type: "knight", color: "white" }
-  initialBoard[0][6] = { type: "knight", color: "white" }
-  initialBoard[7][1] = { type: "knight", color: "black" }
-  initialBoard[7][6] = { type: "knight", color: "black" }
-  initialBoard[0][2] = { type: "bishop", color: "white" }
-  initialBoard[0][5] = { type: "bishop", color: "white" }
-  initialBoard[7][2] = { type: "bishop", color: "black" }
-  initialBoard[7][5] = { type: "bishop", color: "black" }
-  initialBoard[0][3] = { type: "queen", color: "white" }
-  initialBoard[7][3] = { type: "queen", color: "black" }
-  initialBoard[0][4] = { type: "king", color: "white", hasMoved: false }
-  initialBoard[7][4] = { type: "king", color: "black", hasMoved: false }
+  initialBoard[7][0] = { type: "rook", color: "white", hasMoved: false }
+  initialBoard[7][7] = { type: "rook", color: "white", hasMoved: false }
+  initialBoard[0][0] = { type: "rook", color: "black", hasMoved: false }
+  initialBoard[0][7] = { type: "rook", color: "black", hasMoved: false }
+  initialBoard[7][1] = { type: "knight", color: "white" }
+  initialBoard[7][6] = { type: "knight", color: "white" }
+  initialBoard[0][1] = { type: "knight", color: "black" }
+  initialBoard[0][6] = { type: "knight", color: "black" }
+  initialBoard[7][2] = { type: "bishop", color: "white" }
+  initialBoard[7][5] = { type: "bishop", color: "white" }
+  initialBoard[0][2] = { type: "bishop", color: "black" }
+  initialBoard[0][5] = { type: "bishop", color: "black" }
+  initialBoard[7][3] = { type: "queen", color: "white" }
+  initialBoard[0][3] = { type: "queen", color: "black" }
+  initialBoard[7][4] = { type: "king", color: "white", hasMoved: false }
+  initialBoard[0][4] = { type: "king", color: "black", hasMoved: false }
   return initialBoard
 }
 
